@@ -2,11 +2,11 @@ import { awscdk, javascript, github } from 'projen';
 const project = new awscdk.AwsCdkConstructLibrary({
   author: 'yicr',
   authorAddress: 'yicr@users.noreply.github.com',
-  authorOrganization: true,
   cdkVersion: '2.232.0',
   typescriptVersion: '5.9.x',
   jsiiVersion: '5.9.x',
   defaultReleaseBranch: 'main',
+  packageManager: javascript.NodePackageManager.YARN_CLASSIC,
   name: 'aws-ec2-instance-running-scheduler',
   description: 'AWS CDK construct to run EC2 instances on a schedule (start/stop within working hours) using EventBridge Scheduler and a Durable Lambda.',
   keywords: ['aws', 'cdk', 'aws-cdk', 'auto', 'running', 'scheduler', 'ec2', 'instance'],
@@ -21,6 +21,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
     'aws-lambda-secret-fetcher@^0.3',
     'aws-sdk-client-mock@^2',
     'aws-sdk-client-mock-jest@^2',
+    'safe-env-getter@^0.2',
   ],
   mergify: true,
   npmTrustedPublishing: true,
@@ -59,5 +60,6 @@ const project = new awscdk.AwsCdkConstructLibrary({
   //   packageId: 'Gammarers.CDK.AWS.EC2InstanceRunningScheduleStack',
   // },
 });
+project.package.addField('packageManager', 'yarn@1.22.22');
 project.addPackageIgnore('/.devcontainer/');
 project.synth();
