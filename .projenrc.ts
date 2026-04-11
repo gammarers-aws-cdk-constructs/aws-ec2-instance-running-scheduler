@@ -60,5 +60,6 @@ const project = new awscdk.AwsCdkConstructLibrary({
   //   packageId: 'Gammarers.CDK.AWS.EC2InstanceRunningScheduleStack',
   // },
 });
+project.package.addField('packageManager', 'yarn@1.22.22');
 project.addPackageIgnore('/.devcontainer/');
 project.synth();
