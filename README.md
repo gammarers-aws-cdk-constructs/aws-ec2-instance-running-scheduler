@@ -7,7 +7,7 @@
 
 [![View on Construct Hub](https://constructs.dev/badge?package=aws-ec2-instance-running-scheduler)](https://constructs.dev/packages/aws-ec2-instance-running-scheduler)
 
-AWS CDK construct that starts and stops EC2 instances on a cron schedule using **EventBridge Scheduler** and a **Durable Execution Lambda**. The handler discovers instances with the **Resource Groups Tagging API**, runs start/stop and **polls until the instance reaches the target state** (durable `step` / `wait`), processes **multiple instances in parallel** (bounded concurrency), and posts **Slack** summary and per-instance thread messages using a secret from **Secrets Manager**.
+AWS CDK construct that starts and stops EC2 instances on a cron schedule using **EventBridge Scheduler** and a **Durable Execution Lambda**. The handler discovers instances with the **Resource Groups Tagging API**, runs start/stop and **polls until the instance reaches the target state** (durable `step` / `wait`), processes **multiple instances in parallel** (bounded concurrency), and posts **Slack** summary and per-instance thread messages using a secret from **Secrets Manager**. The Lambda emits **structured application logs** (invocation, EC2 transitions, Slack steps, completion) alongside JSON platform logs.
 
 ## Features
 
@@ -15,10 +15,11 @@ AWS CDK construct that starts and stops EC2 instances on a cron schedule using *
 - **EventBridge Scheduler** – Separate cron rules for start and stop, with per-rule timezone (`aws-cdk-lib` `TimeZone`).
 - **Durable Lambda** – One Lambda with AWS Lambda Durable Execution (`step`, `wait`, `map`, child contexts per instance) for long-running workflows without Step Functions.
 - **Stable-state polling** – After start/stop, the function waits and re-describes instances until `running` (start mode) or `stopped` (stop mode), or until a terminal error.
-- **Slack notifications** – Required for a successful run: parent message plus threaded updates per instance; credentials come from Secrets Manager (`token` and `channel` JSON).
+- **Slack notifications** – Required for a successful run: parent message plus threaded updates per instance; credentials come from Secrets Manager (`token` and `channel` JSON). The secret name is passed as **`SLACK_SECRET_NAME`** on the function (from `secrets.slackSecretName`) and validated at runtime via **safe-env-getter**.
+- **Structured logging** – The handler uses the durable execution **`ctx.logger`** for traceable JSON application logs (e.g. invocation, describe/start/stop/wait loops, target count, Slack posts, errors before instance state failures).
 - **Scheduling toggle** – Enable or disable both schedules without removing the stack (`enableScheduling`).
 - **Configurable schedules** – Optional cron overrides for start and stop (`minute`, `hour`, `week`, `timezone`); sensible defaults if omitted.
-- **IAM and observability** – EC2 and tagging API permissions, Slack secret read grant, JSON logging, and a dedicated log group (construct defaults).
+- **IAM and observability** – EC2 and tagging API permissions, Slack secret read grant, **Parameters and Secrets Lambda Extension** (configured on the function for secret access patterns), JSON logging with configurable system/application levels, and a dedicated log group (construct defaults).
 
 ## Installation
 
@@ -109,7 +110,7 @@ new EC2InstanceRunningScheduleStack(app, 'EC2InstanceRunningScheduleStack', {
 });
 ```
 
-EventBridge Scheduler invokes the Lambda with `Params.TagKey`, `Params.TagValues`, and `Params.Mode` (`Start` or `Stop`); the construct wires this for you.
+EventBridge Scheduler invokes the Lambda with `Params.TagKey`, `Params.TagValues`, and `Params.Mode` (`Start` or `Stop`); the construct wires this for you. The function environment includes **`SLACK_SECRET_NAME`** set to `secrets.slackSecretName`.
 
 ## Options
 
@@ -137,13 +138,13 @@ These options apply to **`EC2InstanceRunningScheduler`** and to **`EC2InstanceRu
 
 ### Secrets
 
-- `slackSecretName` – Name of the AWS Secrets Manager secret. The Lambda expects JSON with **`token`** (Slack bot token) and **`channel`** (channel ID or name for `chat.postMessage`).
+- `slackSecretName` – Name of the AWS Secrets Manager secret. The Lambda expects JSON with **`token`** (Slack bot token) and **`channel`** (channel ID or name for `chat.postMessage`). The construct sets **`SLACK_SECRET_NAME`** on the function to this value; the handler reads and validates it at runtime (via **safe-env-getter**).
 
 ## Requirements
 
 - **Node.js** ≥ 20.0.0 (for developing or synthesizing CDK apps that depend on this package).
 - **aws-cdk-lib** ^2.232.0 and **constructs** ^10.5.1 (peer dependencies).
-- **AWS** – EventBridge Scheduler; Lambda with **Durable Execution** and a **live alias**; EC2 (describe/start/stop); Resource Groups Tagging API; Secrets Manager. The deployed function uses the **latest Node.js runtime** available in the region (as configured by the construct’s Lambda class), **arm64**, and Durable Execution–compatible settings.
+- **AWS** – EventBridge Scheduler; Lambda with **Durable Execution** (requires **Node.js 22+** in the deployment region—runtime is the latest Node.js available in the region per the construct), a **live alias**, **Parameters and Secrets Lambda Extension**; EC2 (describe/start/stop); Resource Groups Tagging API; Secrets Manager. The deployed function uses **arm64**, Durable Execution–compatible IAM and settings, and a bundled handler that loads secrets via **aws-lambda-secret-fetcher**.
 
 ## License
 
