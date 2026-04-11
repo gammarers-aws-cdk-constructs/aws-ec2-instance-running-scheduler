@@ -17,8 +17,8 @@ import {
 import { GetResourcesCommand, ResourceGroupsTaggingAPIClient } from '@aws-sdk/client-resource-groups-tagging-api';
 import { WebClient } from '@slack/web-api';
 import { secretFetcher } from 'aws-lambda-secret-fetcher';
-import { isDesiredStableState } from './running-scheduler-predicates';
 import { SafeEnvGetter } from 'safe-env-getter';
+import { isDesiredStableState } from './running-scheduler-predicates';
 
 /** Mapping of EC2 instance state to display name and emoji for Slack. */
 const STATE_LIST = [
