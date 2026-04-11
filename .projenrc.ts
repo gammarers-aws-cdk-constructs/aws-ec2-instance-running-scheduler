@@ -2,11 +2,11 @@ import { awscdk, javascript, github } from 'projen';
 const project = new awscdk.AwsCdkConstructLibrary({
   author: 'yicr',
   authorAddress: 'yicr@users.noreply.github.com',
-  authorOrganization: true,
   cdkVersion: '2.232.0',
   typescriptVersion: '5.9.x',
   jsiiVersion: '5.9.x',
   defaultReleaseBranch: 'main',
+  packageManager: javascript.NodePackageManager.YARN_CLASSIC,
   name: 'aws-ec2-instance-running-scheduler',
   description: 'AWS CDK construct to run EC2 instances on a schedule (start/stop within working hours) using EventBridge Scheduler and a Durable Lambda.',
   keywords: ['aws', 'cdk', 'aws-cdk', 'auto', 'running', 'scheduler', 'ec2', 'instance'],
